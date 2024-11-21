@@ -1,0 +1,19 @@
+// Check if sent datagrams with length below GSO size get checksummed correctly
+
+--ip_version=ipv4
+--local_ip=192.168.0.1
+
+`
+ethtool -K tun0 tx-checksumming off >/dev/null
+`
+
+0   socket(..., SOCK_DGRAM, IPPROTO_UDP) = 3
++0  bind(3, ..., ...) = 0
++0  connect(3, ..., ...) = 0
+
++0  write(3, ..., 1000) = 1000
++0  > udp sum 0x3643 (1000)
+
++0  setsockopt(3, IPPROTO_UDP, UDP_SEGMENT, [1280], 4) = 0
++0  write(3, ..., 1000) = 1000
++0  > udp sum 0x3643 (1000)
