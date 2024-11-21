@@ -40,5 +40,6 @@ extern struct packet *new_udp_packet(int address_family,
 				     u16 udp_payload_bytes,
 				     u16 src_port,
 				     u16 dst_port,
+				     s32 l4_csum,
 				     char **error);
 #endif /* __UDP_PACKET_H__ */

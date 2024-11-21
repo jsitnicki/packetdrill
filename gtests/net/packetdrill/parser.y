@@ -546,6 +546,7 @@ static struct packet *append_gre(struct packet *packet, struct expression *expr)
 %token <reserved> NONE CHECKSUM SEQUENCE PRESENT
 %token <reserved> EE_ERRNO EE_CODE EE_DATA EE_INFO EE_ORIGIN EE_TYPE
 %token <reserved> SCM_SEC SCM_NSEC
+%token <reserved> COMPLETE PARTIAL
 %token <floating> FLOAT
 %token <integer> INTEGER HEX_INTEGER
 %token <string> WORD STRING BACK_QUOTED CODE IPV4_ADDR IPV6_ADDR
@@ -569,6 +570,7 @@ static struct packet *append_gre(struct packet *packet, struct expression *expr)
 %type <integer> gre_sum gre_off gre_key gre_seq
 %type <integer> opt_icmp_echo_id
 %type <integer> flow_label
+%type <integer> opt_l4_csum
 %type <string> icmp_type opt_icmp_code opt_ack_flag opt_word ack_and_ace flags
 %type <string> opt_tcp_fast_open_cookie hex_blob
 %type <string> opt_note note word_list
@@ -817,7 +819,7 @@ tcp_packet_spec
 ;
 
 udp_packet_spec
-: packet_prefix opt_ip_info UDP opt_port_info '(' INTEGER ')' {
+: packet_prefix opt_ip_info UDP opt_port_info opt_l4_csum '(' INTEGER ')'{
 	char *error = NULL;
 	struct packet *outer = $1, *inner = NULL;
 	enum direction_t direction = outer->direction;
@@ -826,12 +828,12 @@ udp_packet_spec
 		semantic_error("ECN can only be used with TCP packets");
 	}
 
-	if (!is_valid_u16($6)) {
+	if (!is_valid_u16($7)) {
 		semantic_error("UDP payload size out of range");
 	}
 
 	inner = new_udp_packet(in_config->wire_protocol, direction, $2,
-			       $6, $4.src_port, $4.dst_port, &error);
+			       $7, $4.src_port, $4.dst_port, $5, &error);
 	if (inner == NULL) {
 		assert(error != NULL);
 		semantic_error(error);
@@ -1073,6 +1075,21 @@ opt_port_info
 
 	$$.src_port		= $1;
 	$$.dst_port		= $3;
+}
+;
+
+opt_l4_csum
+:		{ $$ = L4_CSUM_IGNORE; }
+| SUM PARTIAL	{ $$ = L4_CSUM_PARTIAL; }
+| SUM COMPLETE	{ $$ = L4_CSUM_COMPLETE; }
+| SUM any_int	{
+	s64 csum = $2->value.num;
+
+	if (!is_valid_u16(csum)) {
+		semantic_error("L4 checksum out of range");
+	}
+
+	$$ = csum;
 }
 ;
 

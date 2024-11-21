@@ -1036,6 +1036,14 @@ static int verify_udp(
 			ntohs(script_udp->len),
 			ntohs(actual_udp->len), error))
 		return STATUS_ERR;
+
+	/* Verify UDP checksum if specified by user */
+	if (!(script_packet->flags & FLAG_L4_CSUM_NOCHECK) &&
+	    check_field("l4_csum",
+			ntohs(script_udp->check),
+			ntohs(actual_udp->check), error))
+		return STATUS_ERR;
+
 	return STATUS_OK;
 }
 

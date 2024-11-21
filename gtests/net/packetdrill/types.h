@@ -142,6 +142,21 @@ enum ip_version_t {
 	IP_VERSION_6		= 2,
 };
 
+/* How to treat the optional L4 checksum expression. */
+enum l4_csum_t {
+	/* Check if packet contains a complete checksum. */
+	L4_CSUM_COMPLETE	= -4,
+	/* Check if packet contains a partial checksum. */
+	L4_CSUM_PARTIAL		= -3,
+	/* Check if packet checksum is set to the specified value. */
+	L4_CSUM_EQUALS		= -2,
+	/* Don't check the packet checksum. */
+	L4_CSUM_IGNORE		= -1,
+	/* Values 0 .. 0xffff used to store the actual checksum. */
+	L4_CSUM_MIN		= 0,
+	L4_CSUM_MAX		= 65535,
+};
+
 extern struct in_addr in4addr_any;
 
 /* Comparing IPv4 addresses for equality in C, which has no == on structs. */

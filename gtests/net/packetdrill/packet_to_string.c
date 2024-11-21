@@ -222,7 +222,9 @@ static int udp_packet_to_string(FILE *s, struct packet *packet,
 		fputc(' ', s);
 	}
 
-	fprintf(s, "udp (%u)", packet_payload_len(packet));
+	fprintf(s, "udp sum 0x%x (%u)",
+		ntohs(packet->udp->check),
+		packet_payload_len(packet));
 
 	if (format == DUMP_VERBOSE)
 		packet_buffer_to_string(s, packet);

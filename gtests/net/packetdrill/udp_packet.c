@@ -28,12 +28,13 @@
 #include "udp.h"
 
 struct packet *new_udp_packet(int address_family,
-			       enum direction_t direction,
-			       struct ip_info ip_info,
-			       u16 udp_payload_bytes,
-			       u16 src_port,
-			       u16 dst_port,
-			       char **error)
+			      enum direction_t direction,
+			      struct ip_info ip_info,
+			      u16 udp_payload_bytes,
+			      u16 src_port,
+			      u16 dst_port,
+			      s32 l4_csum,
+			      char **error)
 {
 	struct packet *packet = NULL;  /* the newly-allocated result packet */
 	struct header *udp_header = NULL;  /* the UDP header info */
@@ -73,6 +74,7 @@ struct packet *new_udp_packet(int address_family,
 			     ip_info.tos.value, ip_info.flow_label,
 			     ip_info.ttl, IPPROTO_UDP);
 
+
 	udp_header = packet_append_header(packet, HEADER_UDP,
 					  sizeof(struct udp));
 	udp_header->total_bytes = udp_header_bytes + udp_payload_bytes;
@@ -85,6 +87,23 @@ struct packet *new_udp_packet(int address_family,
 	packet->udp->dst_port	= htons(dst_port);
 	packet->udp->len	= htons(udp_header_bytes + udp_payload_bytes);
 	packet->udp->check	= 0;
+
+	/* Set UDP checksum to verify against, if requested */
+	switch (l4_csum) {
+	case L4_CSUM_IGNORE:
+		packet->flags |= FLAG_L4_CSUM_NOCHECK;
+		break;
+	case L4_CSUM_MIN ... L4_CSUM_MAX:
+		packet->udp->check = htons((u16)l4_csum);
+		break;
+	case L4_CSUM_PARTIAL:
+	case L4_CSUM_COMPLETE:
+		asprintf(error, "not implemented: partial/complete L4 checksum");
+		return NULL;
+	default:
+		asprintf(error, "unexpected L4 checksum value %d", l4_csum);
+		return NULL;
+	}
 
 	packet->ip_bytes = ip_bytes;
 	return packet;
